@@ -1,0 +1,9 @@
+node_modules/
+.env
+recordings/
+transcripts/
+__pycache__/
+*.pyc
+venv/
+.venv/
+config/characters.json
