@@ -91,6 +91,7 @@ async function loadTranscripts() {
       <div class="card-actions">
         <button class="btn btn-small" onclick="viewTranscript('${t.file}')">View</button>
         <button class="btn btn-small" onclick="openCondenseModal('${t.file}', '${t.title}')">Condense</button>
+        <button class="btn btn-small" onclick="tagTranscript('${t.file}')">Tag</button>
         <button class="btn btn-small btn-danger" onclick="deleteTranscript('${t.file}')">Delete</button>
       </div>
     </div>
@@ -399,6 +400,54 @@ async function deleteTranscript(file) {
   if (res.ok) {
     loadTranscripts();
     loadCondensed();
+  }
+}
+
+// --- Tag Transcript ---
+async function tagTranscript(file) {
+  // Show a simple loading state on the button
+  const cards = document.querySelectorAll('.card');
+  let targetBtn = null;
+  cards.forEach(card => {
+    const btn = card.querySelector(`[onclick="tagTranscript('${file}')"]`);
+    if (btn) {
+      targetBtn = btn;
+      btn.textContent = 'Tagging...';
+      btn.disabled = true;
+    }
+  });
+
+  try {
+    const res = await fetch('/api/tag', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ file }),
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      if (targetBtn) {
+        targetBtn.textContent = 'Tagged!';
+        setTimeout(() => {
+          targetBtn.textContent = 'Tag';
+          targetBtn.disabled = false;
+        }, 2000);
+      }
+      loadTranscripts();
+      loadCondensed();
+    } else {
+      alert(`Tagging failed: ${data.error || data.output}`);
+      if (targetBtn) {
+        targetBtn.textContent = 'Tag';
+        targetBtn.disabled = false;
+      }
+    }
+  } catch (err) {
+    alert(`Error: ${err.message}`);
+    if (targetBtn) {
+      targetBtn.textContent = 'Tag';
+      targetBtn.disabled = false;
+    }
   }
 }
 

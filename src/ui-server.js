@@ -79,7 +79,7 @@ app.get('/api/transcripts', (req, res) => {
     if (!fs.existsSync(transcriptsDir)) continue;
 
     const files = fs.readdirSync(transcriptsDir)
-      .filter(f => f.endsWith('.json') && !f.includes('_condensed') && !f.includes('_aggressive') && !f.includes('_game-only'))
+      .filter(f => f.endsWith('.json') && !f.includes('_condensed') && !f.includes('_aggressive') && !f.includes('_game-only') && !f.includes('_tagged'))
       .map(file => {
         const filePath = path.join(transcriptsDir, file);
         const stat = fs.statSync(filePath);
@@ -117,7 +117,7 @@ app.get('/api/condensed', (req, res) => {
     if (!fs.existsSync(transcriptsDir)) continue;
 
     const files = fs.readdirSync(transcriptsDir)
-      .filter(f => f.endsWith('.json') && (f.includes('_condensed') || f.includes('_aggressive') || f.includes('_game-only')))
+      .filter(f => f.endsWith('.json') && (f.includes('_condensed') || f.includes('_aggressive') || f.includes('_game-only') || f.includes('_tagged')))
       .map(file => {
         const filePath = path.join(transcriptsDir, file);
         const stat = fs.statSync(filePath);
@@ -128,6 +128,7 @@ app.get('/api/condensed', (req, res) => {
         let mode = 'condensed';
         if (file.includes('_aggressive')) mode = 'aggressive';
         else if (file.includes('_game-only')) mode = 'game-only';
+        else if (file.includes('_tagged')) mode = 'tagged';
 
         return {
           file,
@@ -238,6 +239,47 @@ app.post('/api/transcribe', (req, res) => {
   proc.on('close', (code) => {
     if (code === 0) {
       res.json({ success: true, output });
+    } else {
+      res.json({ success: false, output, error });
+    }
+  });
+});
+
+// Run tagger
+app.post('/api/tag', (req, res) => {
+  const { file } = req.body;
+
+  // Find the transcript in either location
+  const locations = [
+    path.join(process.cwd(), 'transcripts', file),
+    path.join(process.cwd(), 'transcriber', 'transcripts', file),
+  ];
+  const transcriptPath = locations.find(p => fs.existsSync(p));
+  if (!transcriptPath) return res.json({ success: false, error: `File not found: ${file}` });
+
+  const session0Path = path.join(process.cwd(), 'config', 'session0.json');
+
+  const venvPython = path.join(process.cwd(), 'transcriber', 'venv', 'Scripts', 'python.exe');
+  const scriptPath = path.join(process.cwd(), 'transcriber', 'tagger.py');
+
+  const args = [scriptPath, transcriptPath];
+  if (fs.existsSync(session0Path)) {
+    args.push('--session0', session0Path);
+  }
+
+  const proc = spawn(venvPython, args, { cwd: path.join(process.cwd(), 'transcriber') });
+
+  let output = '';
+  let error = '';
+
+  proc.stdout.on('data', (data) => { output += data.toString(); });
+  proc.stderr.on('data', (data) => { error += data.toString(); });
+
+  proc.on('close', (code) => {
+    if (code === 0) {
+      const stem = file.replace('.json', '');
+      const outputFile = `${stem}_tagged.json`;
+      res.json({ success: true, output, outputFile });
     } else {
       res.json({ success: false, output, error });
     }

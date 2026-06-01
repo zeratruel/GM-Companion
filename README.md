@@ -285,4 +285,6 @@ Transcripts are saved as JSON files:
 
 ## License
 
+MIT License — see [LICENSE](LICENSE) for details.
+
 Made with care by Safe Port Gaming.
