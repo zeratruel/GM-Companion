@@ -1,7 +1,4 @@
 {
   "campaign": "Yarith",
-  "playerCharacters": ["DM", "Odarious"],
-  "knownNPCs": [],
-  "knownLocations": [],
-  "keywords": []
+  "playerCharacters": ["DM", "Odarious"]
 }

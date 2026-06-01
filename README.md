@@ -192,6 +192,57 @@ After transcribing, you can condense the transcript to remove noise:
 | **Aggressive** | Also removes table talk (mic checks, "brb", "whose turn") |
 | **Game Only** | Keeps only in-game content + all DM narration |
 
+## Tagging
+
+The tagger analyzes your transcript and marks segments with contextual tags:
+
+| Tag | What it detects |
+|-----|----------------|
+| `[COMBAT]` | Initiative, attacks, damage, saving throws |
+| `[NPC]` | A known NPC is mentioned (returning character) |
+| `[NEW_NPC]` | DM introduces a previously unknown named character |
+| `[LOCATION]` | Scene changes, new areas described |
+| `[LOOT]` | Items, gold, potions, rewards |
+| `[ROLEPLAY]` | In-character speech and actions |
+| `[PLANNING]` | Party discussing strategy, resting |
+
+### Iterative Campaign Knowledge
+
+The tagger learns across sessions. Each time you tag a transcript:
+1. It loads your campaign's accumulated knowledge (known NPCs, locations)
+2. Tags the transcript — distinguishing returning characters (`[NPC]`) from new introductions (`[NEW_NPC]`)
+3. Saves newly discovered NPCs and locations back to the campaign file
+
+This means **Session 5 is smarter than Session 1** — it knows every NPC and location from previous sessions.
+
+Campaign knowledge is stored in `config/campaigns/{campaign_name}.json` and grows automatically.
+
+### Setup
+
+Edit `config/session0.json` with your campaign name and player characters:
+
+```json
+{
+  "campaign": "Yarith",
+  "playerCharacters": ["DM", "Gilbert", "Thornwick"]
+}
+```
+
+Then just click **Tag** on any transcript in the control panel. The campaign file is created and updated automatically.
+
+### CLI Alternative
+
+```bash
+cd transcriber
+venv\Scripts\activate
+
+# Tag a transcript (uses config/session0.json for campaign name)
+python tagger.py ../transcripts/session.json --config-dir ../config
+
+# Override campaign name
+python tagger.py ../transcripts/session.json --config-dir ../config --campaign "Curse of Strahd"
+```
+
 ### CLI Alternative
 
 ```bash
@@ -274,7 +325,10 @@ Transcripts are saved as JSON files:
 ├── src/                 # Bot source code
 ├── ui/                  # Control panel (web interface)
 ├── transcriber/         # Python transcription scripts
-├── config/              # Character map configuration
+├── config/
+│   ├── session0.json          # Campaign name + player characters
+│   ├── characters.example.json # Template for character mapping
+│   └── campaigns/             # Auto-generated campaign knowledge (grows each session)
 ├── recordings/          # Recorded audio (created automatically)
 ├── transcripts/         # Transcription output (created automatically)
 ├── start.bat            # Windows launcher

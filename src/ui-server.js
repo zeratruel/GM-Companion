@@ -257,15 +257,12 @@ app.post('/api/tag', (req, res) => {
   const transcriptPath = locations.find(p => fs.existsSync(p));
   if (!transcriptPath) return res.json({ success: false, error: `File not found: ${file}` });
 
-  const session0Path = path.join(process.cwd(), 'config', 'session0.json');
+  const configDir = path.join(process.cwd(), 'config');
 
   const venvPython = path.join(process.cwd(), 'transcriber', 'venv', 'Scripts', 'python.exe');
   const scriptPath = path.join(process.cwd(), 'transcriber', 'tagger.py');
 
-  const args = [scriptPath, transcriptPath];
-  if (fs.existsSync(session0Path)) {
-    args.push('--session0', session0Path);
-  }
+  const args = [scriptPath, transcriptPath, '--config-dir', configDir];
 
   const proc = spawn(venvPython, args, { cwd: path.join(process.cwd(), 'transcriber') });
 
